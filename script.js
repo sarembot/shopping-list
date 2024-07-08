@@ -3,6 +3,10 @@ const clearButton = document.querySelector('.btn-clear');
 const itemInput = document.getElementById('item-input');
 const liButton = document.createElement('button');
 const filterInput = document.getElementById('filter');
+const item = document.querySelectorAll('li');
+const formBtn = document.getElementById('add-btn');
+const editBtn = document.querySelector('.edit-btn');
+let isEditMode = false;
 
 function createButton() {
   const button = document.createElement('button');
@@ -17,11 +21,10 @@ function createButton() {
 }
 
 // STEP 1 : ADD ITEMS TO LIST
-function createNewItem() {
+function createNewItem(text) {
   const newListItem = document.createElement('li');
-  const newText = document.getElementById('item-input').value;
 
-  newListItem.appendChild(document.createTextNode(newText));
+  newListItem.appendChild(document.createTextNode(text));
 
   list.appendChild(newListItem);
   newListItem.appendChild(createButton());
@@ -33,17 +36,31 @@ function addNewItem(e) {
     return;
   }
 
-  createNewItem();
-  itemInput.value = '';
+  if (isEditMode) {
+    editItem(itemInput.value);
+    e.preventDefault();
+    return;
+  }
+
+  storeLocally(itemInput.value);
+
+  createNewItem(itemInput.value);
   toggleUi();
+
+  itemInput.value = '';
 
   e.preventDefault();
 }
 
 // STEP 2 : REMOVE ITEMS FROM LIST WITH X BUTTON
-function removeItem(e) {
+function onClickItem(e) {
+  const itemToRemove = e.target.closest('li');
+
   if (e.target.parentElement.classList.contains('remove-item')) {
-    e.target.closest('li').remove();
+    itemToRemove.remove();
+    removeFromStorage(itemToRemove.textContent);
+  } else {
+    setEditMode(e.target.closest('li'));
   }
 
   toggleUi();
@@ -56,6 +73,7 @@ function removeAll(e) {
     list.removeChild(list.lastElementChild);
   }
   toggleUi();
+  localStorage.clear();
   e.preventDefault();
 }
 
@@ -93,15 +111,67 @@ function toggleUi() {
 toggleUi();
 
 // STEP 5 : ADD LOCAL STORAGE TO PERSIST ITEMS
+let storageItems;
+
+function storeLocally(item) {
+  if (localStorage.getItem('items') === null) {
+    storageItems = [];
+  } else {
+    storageItems = JSON.parse(localStorage.getItem('items'));
+  }
+
+  storageItems.push(item);
+  localStorage.setItem('items', JSON.stringify(storageItems));
+}
+
+function removeFromStorage(itemToRemove) {
+  storageItems = JSON.parse(localStorage.getItem('items'));
+  console.log(storageItems);
+  storageItems = storageItems.filter((item) => item != itemToRemove);
+
+  localStorage.removeItem('items');
+  localStorage.setItem('items', JSON.stringify(storageItems));
+}
+
+function loadStoredItems() {
+  storageItems = JSON.parse(localStorage.getItem('items'));
+
+  storageItems.forEach((item) => {
+    createNewItem(item);
+    toggleUi();
+  });
+}
 
 // STEP 6 : CLICK ON AN ITEM TO EDIT IT
 
-// STEP 7 : UPDATE ITEM
+function setEditMode(item) {
+  isEditMode = !isEditMode;
 
+  if (isEditMode) {
+    formBtn.innerHTML = '<i class="fa-solid fa-pen"></i> Change Item';
+    formBtn.classList.add('edit-btn');
+    itemInput.value = item.textContent;
+  } else if (!isEditMode) {
+    formBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Item';
+    formBtn.classList.remove('edit-btn');
+  }
+
+  item.classList.toggle('edit-mode');
+}
+
+// STEP 7 : UPDATE ITEM
+function editItem() {
+  const item = document.querySelector('.edit-mode');
+
+  item.textContent = itemInput.value;
+  item.appendChild(createButton());
+  setEditMode(item);
+}
 // STEP 8 : DEPLOY TO NETLIFY
 
 //EVENT LISTENERS
 document.getElementById('add-btn').addEventListener('click', addNewItem);
-list.addEventListener('click', removeItem);
+list.addEventListener('click', onClickItem);
 clearButton.addEventListener('click', removeAll);
 filterInput.addEventListener('input', filterItems);
+window.addEventListener('load', loadStoredItems);

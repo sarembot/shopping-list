@@ -108,6 +108,14 @@ header h1 {
   flex-wrap: wrap;
 }
 
+.edit-mode {
+  color: #fff;
+}
+
+.edit-btn {
+  background-color: #228b22;
+}
+
 .items li {
   display: flex;
   justify-content: space-between;
